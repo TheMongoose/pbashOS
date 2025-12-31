@@ -11,6 +11,7 @@ rm # removes a file
 rm -r # removes a directory
 help # shows the rest of the commands
 nano # text editor for storing data and programming
+su # signs you into root so you can edit all folders password to root is pbash
 ```
 # More
 The pbash system is limited to only commands. No logic, but you can write a file call boot.pbash in the / directory to make that script run on boot.  
