@@ -3,5 +3,4 @@ Board ID:m5stack_stamp_s3
 UID:8D58CA5ADA08
 MAC:00:00:00:00:50:B7
 boot.py output:
-Boot: CardOS Mode (Device Write Access)
-SD Card mounted at /sd
+>> Stealth Mode: Drive Disabled

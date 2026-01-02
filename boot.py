@@ -1,33 +1,49 @@
-# boot.py
 import storage
 import board
 import digitalio
-import sdcardio
-import os
-import busio
+import usb_cdc
+import usb_hid
 
-# 1. READ-ONLY TOGGLE
-# Hold G0 button (IO0) on boot to give PC write access.
-# Otherwise, Cardputer gets write access.
-button = digitalio.DigitalInOut(board.IO0)
-button.direction = digitalio.Direction.INPUT
-button.pull = digitalio.Pull.UP
+# 1. Setup Keyboard Scan (Manual Matrix for M5Cardputer)
+COLS = [board.IO13, board.IO15, board.IO3, board.IO4, board.IO5, board.IO6, board.IO7]
+ROWS = [board.IO8, board.IO9, board.IO11]
 
-if button.value == False:
-    # Button is PRESSED (Low)
-    print("Boot: Safe Mode (PC Write Access)")
-else:
-    # Button is RELEASED (High)
-    print("Boot: CardOS Mode (Device Write Access)")
-    storage.remount("/", readonly=False)
+pressed = False
 
-# 2. SD CARD MOUNT
-# M5Stack Cardputer SD Pins: SCK=40, MISO=39, MOSI=14, CS=12
 try:
-    spi = busio.SPI(clock=board.IO40, MOSI=board.IO14, MISO=board.IO39)
-    sd = sdcardio.SDCard(spi, board.IO12)
-    vfs = storage.VfsFat(sd)
-    storage.mount(vfs, "/sd")
-    print("SD Card mounted at /sd")
+    col_pins = []
+    for pin in COLS:
+        p = digitalio.DigitalInOut(pin)
+        p.direction = digitalio.Direction.INPUT
+        p.pull = digitalio.Pull.UP
+        col_pins.append(p)
+
+    row_pins = []
+    for pin in ROWS:
+        p = digitalio.DigitalInOut(pin)
+        p.direction = digitalio.Direction.OUTPUT
+        p.value = 1
+        row_pins.append(p)
+
+    for r in row_pins:
+        r.value = 0
+        for c in col_pins:
+            if c.value == 0:
+                pressed = True
+        r.value = 1
+        if pressed: break
+
+    for p in col_pins + row_pins:
+        p.deinit()
+
 except Exception as e:
-    print("No SD Card:", e)
+    print("Boot Key Error:", e)
+
+# 2. STORAGE CONTROL
+if pressed:
+    print(">> Maintenance Mode: Drive Enabled")
+    storage.enable_usb_drive()
+    storage.remount("/", readonly=False)
+else:
+    print(">> Stealth Mode: Drive Disabled")
+    storage.disable_usb_drive()
